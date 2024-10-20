@@ -52,7 +52,7 @@ run v p s =
       putStrLn "\nParse Successful!"
       showTree v tree
 
-      let llvmCode = generateLLVM tree  -- Teraz tree ma typ Program
+      let llvmCode = generateLLVM tree 
 
       createDirectoryIfMissing True "foo/bar"
       let llFilePath = "foo/bar/baz.ll"
