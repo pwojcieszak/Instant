@@ -27,7 +27,7 @@ AbsInstant.hs LexInstant.x ParInstant.y PrintInstant.hs TestInstant.hs : Instant
 %.hs : %.x
 	${ALEX} ${ALEX_OPTS} $<
 
-TestInstant : AbsInstant.hs LexInstant.hs ParInstant.hs PrintInstant.hs TestInstant.hs
+TestInstant : AbsInstant.hs LexInstant.hs ParInstant.hs PrintInstant.hs TestInstant.hs GeneratorLLVM.hs
 	${GHC} ${GHC_OPTS} $@
 
 # Rules for cleaning generated files.

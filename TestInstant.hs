@@ -13,16 +13,21 @@ import Prelude
   , IO, (>>), (>>=), mapM_, putStrLn
   , FilePath
   , getContents, readFile
+  , Bool(..)
   )
 import System.Environment ( getArgs )
 import System.Exit        ( exitFailure )
+import System.IO          ( writeFile )
+import System.Process     ( callCommand )
+import System.Directory   ( createDirectoryIfMissing ) 
 import Control.Monad      ( when )
 
-import AbsInstant   ()
+import AbsInstant   ( Program(..) )
 import LexInstant   ( Token, mkPosToken )
 import ParInstant   ( pProgram, myLexer )
 import PrintInstant ( Print, printTree )
 import SkelInstant  ()
+import GeneratorLLVM ( generateLLVM )
 
 type Err        = Either String
 type ParseFun a = [Token] -> Err a
@@ -31,10 +36,10 @@ type Verbosity  = Int
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
 
-runFile :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
+runFile :: Verbosity -> ParseFun Program -> FilePath -> IO ()
 runFile v p f = putStrLn f >> readFile f >>= run v p
 
-run :: (Print a, Show a) => Verbosity -> ParseFun a -> String -> IO ()
+run :: Verbosity -> ParseFun Program -> String -> IO ()
 run v p s =
   case p ts of
     Left err -> do
@@ -46,6 +51,15 @@ run v p s =
     Right tree -> do
       putStrLn "\nParse Successful!"
       showTree v tree
+
+      let llvmCode = generateLLVM tree  -- Teraz tree ma typ Program
+
+      createDirectoryIfMissing True "foo/bar"
+      let llFilePath = "foo/bar/baz.ll"
+      writeFile llFilePath llvmCode
+
+      let bcFilePath = "foo/bar/baz.bc"
+      callCommand $ "llvm-as " ++ llFilePath ++ " -o " ++ bcFilePath
   where
   ts = myLexer s
   showPosToken ((l,c),t) = concat [ show l, ":", show c, "\t", show t ]
