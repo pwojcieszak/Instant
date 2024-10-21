@@ -6,12 +6,11 @@ import AbsInstant (Program(..), Stmt(..), Exp(..), Ident(..))
 -- Funkcja do generowania kodu LLVM dla programu
 generateLLVM :: AbsInstant.Program -> String
 generateLLVM (Prog stmts) = 
-  let (code, reg) = foldl generateStmt ([], 0) stmts
-      -- Ostatnia instrukcja, która jest wyrażeniem
-      returnCode = "  ret i32 %r" ++ show (reg - 1) ++ "\n"
-  in "define i32 @main() {\n" ++
+  let (code, _) = foldl generateStmt ([], 0) stmts
+  in "@.str = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\", align 1\n\n" ++
+     "declare i32 @printf(i8*, ...) #1\n\n" ++"define i32 @main() {\n" ++
      code ++
-     returnCode ++
+     "  ret i32 0\n" ++
      "}\n"
 
 -- Funkcja do generowania kodu LLVM dla instrukcji
@@ -25,7 +24,7 @@ generateStmt (code, reg) (SAss (Ident ident) exp) =
   in (code ++ allocCode ++ expCode ++ storeCode, regAfterExp)
 generateStmt (code, reg) (SExp exp) =
   let (expCode, newReg) = generateExp reg exp
-  in (code ++ expCode, newReg)
+  in (code ++ expCode  ++ "  call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.str, i32 0, i32 0), i32 %r" ++ show (newReg - 1) ++ ")\n", newReg)
 
 -- Funkcja do generowania kodu LLVM dla wyrażeń
 generateExp :: Int -> AbsInstant.Exp -> (String, Int)

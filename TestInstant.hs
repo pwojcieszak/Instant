@@ -60,6 +60,9 @@ run v p s =
 
       let bcFilePath = "foo/bar/baz.bc"
       callCommand $ "llvm-as " ++ llFilePath ++ " -o " ++ bcFilePath
+      //TODO usunac
+      callCommand $ "lli " ++ bcFilePath
+
   where
   ts = myLexer s
   showPosToken ((l,c),t) = concat [ show l, ":", show c, "\t", show t ]
