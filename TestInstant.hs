@@ -60,7 +60,7 @@ run v p s =
 
       let bcFilePath = "foo/bar/baz.bc"
       callCommand $ "llvm-as " ++ llFilePath ++ " -o " ++ bcFilePath
-      //TODO usunac
+      -- TODO usunac
       callCommand $ "lli " ++ bcFilePath
 
   where
