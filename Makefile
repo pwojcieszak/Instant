@@ -5,13 +5,13 @@ HAPPY      = happy
 ALEX       = alex
 
 # List of source files in the src directory
-src_files = src/AbsInstant.hs src/LexInstant.hs src/ParInstant.hs src/PrintInstant.hs src/MainLLVM.hs src/SkelInstant.hs src/GeneratorLLVM.hs
+src_files = src/AbsInstant.hs src/LexInstant.hs src/ParInstant.hs src/PrintInstant.hs src/SkelInstant.hs 
 
 # List of goals not corresponding to file names
-.PHONY : all clean distclean
+.PHONY : all clean
 
 # Default goal
-all : insc_llvm
+all : insc_llvm  insc_jvm
 
 # Build the source files from Instant.cf using bnfc
 src/AbsInstant.hs src/LexInstant.x src/ParInstant.y src/PrintInstant.hs : src/Instant.cf
@@ -25,7 +25,10 @@ src/%.hs : src/%.x
 	${ALEX} $< -o $@
 
 # Build the insc_llvm executable
-insc_llvm : $(src_files)
+insc_llvm : $(src_files) src/GeneratorLLVM.hs src/MainLLVM.hs
+	${GHC} -o $@ $^
+
+insc_jvm : $(src_files) src/GeneratorJVM.hs src/MainJVM.hs
 	${GHC} -o $@ $^
 
 # Rules for cleaning generated files
