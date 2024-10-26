@@ -33,4 +33,4 @@ insc_jvm : $(src_files) src/GeneratorJVM.hs src/MainJVM.hs
 
 # Rules for cleaning generated files
 clean :
-	-rm -f src/*.hi src/*.o src/*.log src/parser/*.hi src/parser/*.o src/parser/*.log foo/bar/*
+	-rm -f src/*.hi src/*.o src/*.log src/parser/*.hi src/parser/*.o src/parser/*.log foo/bar/* insc_jvm insc_llvm
