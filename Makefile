@@ -5,7 +5,7 @@ HAPPY      = happy
 ALEX       = alex
 
 # List of source files in the src directory
-src_files = src/AbsInstant.hs src/LexInstant.hs src/ParInstant.hs src/PrintInstant.hs src/SkelInstant.hs 
+src_files = src/parser/AbsInstant.hs src/parser/LexInstant.hs src/parser/ParInstant.hs src/parser/PrintInstant.hs src/parser/SkelInstant.hs 
 
 # List of goals not corresponding to file names
 .PHONY : all clean
@@ -14,14 +14,14 @@ src_files = src/AbsInstant.hs src/LexInstant.hs src/ParInstant.hs src/PrintInsta
 all : insc_llvm  insc_jvm
 
 # Build the source files from Instant.cf using bnfc
-src/AbsInstant.hs src/LexInstant.x src/ParInstant.y src/PrintInstant.hs : src/Instant.cf
+src/parser/AbsInstant.hs src/parser/LexInstant.x src/parser/ParInstant.y src/parser/PrintInstant.hs : src/Instant.cf
 	bnfc --haskell src/Instant.cf
 
 # Rules for building generated .hs files from .y and .x files
-src/%.hs : src/%.y
+src/parser/%.hs : src/parser/%.y
 	${HAPPY} $< -o $@
 
-src/%.hs : src/%.x
+src/parser/%.hs : src/parser/%.x
 	${ALEX} $< -o $@
 
 # Build the insc_llvm executable
@@ -33,4 +33,4 @@ insc_jvm : $(src_files) src/GeneratorJVM.hs src/MainJVM.hs
 
 # Rules for cleaning generated files
 clean :
-	-rm -f src/*.hi src/*.o src/*.log
+	-rm -f src/*.hi src/*.o src/*.log src/parser/*.hi src/parser/*.o src/parser/*.log
