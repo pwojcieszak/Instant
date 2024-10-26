@@ -5,10 +5,10 @@ import AbsInstant (Program(..), Stmt(..), Exp(..), Ident(..))
 
 type VarMap = [(String, Int)]
 
-generateJVM :: AbsInstant.Program -> String
-generateJVM (Prog stmts) =
+generateJVM :: AbsInstant.Program -> String -> String
+generateJVM (Prog stmts) baseName =
   let (code, _, _) = foldl generateStmt ("", 0, []) stmts
-  in ".class public baz\n" ++
+  in ".class public " ++ baseName ++ "\n" ++
      ".super java/lang/Object\n\n" ++
      ".method public static main([Ljava/lang/String;)V\n" ++
      ".limit stack 100\n" ++      -- TODO dynamieczne limity

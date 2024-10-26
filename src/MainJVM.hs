@@ -16,6 +16,7 @@ import System.Exit        ( exitFailure )
 import System.IO          ( writeFile )
 import System.Process     ( callCommand )
 import System.Directory   ( createDirectoryIfMissing ) 
+import System.FilePath    ( takeBaseName )
 import Control.Monad      ( when )
 
 import AbsInstant   ( Program(..) )
@@ -33,10 +34,10 @@ putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
 
 runFile :: Verbosity -> ParseFun Program -> FilePath -> IO ()
-runFile v p f = putStrLn f >> readFile f >>= run v p
+runFile v p f = readFile f >>= run v p f
 
-run :: Verbosity -> ParseFun Program -> String -> IO ()
-run v p s =
+run :: Verbosity -> ParseFun Program -> FilePath -> String -> IO ()
+run v p f s =
   case p ts of
     Left err -> do
       putStrLn "\nParse              Failed...\n"
@@ -45,22 +46,23 @@ run v p s =
       putStrLn err
       exitFailure
     Right tree -> do
-      putStrLn "\nParse Successful!"
+      -- TODO usunac
       showTree v tree
 
-      let jvmCode = generateJVM tree 
+      let baseName = takeBaseName f
+      let jvmCode = generateJVM tree baseName
+      let outputDir = "foo/bar"
+      createDirectoryIfMissing True outputDir
 
-      createDirectoryIfMissing True "foo/bar"
-      createDirectoryIfMissing True "lib"
-      let outputFileJ = "baz.j"
-      let outputFileClass = "baz.class"
-      let fbFilePath = "foo/bar/"
 
-      writeFile (fbFilePath ++ outputFileJ) jvmCode
-      callCommand $ "java -jar lib/jasmin.jar -d " ++ fbFilePath ++ " " ++ (fbFilePath ++ outputFileJ)
+      let jFilePath = outputDir ++ "/" ++ baseName ++ ".j"
+
+      writeFile jFilePath jvmCode
+
+      callCommand $ "java -jar lib/jasmin.jar -d " ++ outputDir ++ " " ++ jFilePath ++ " > /dev/null"
       
       -- TODO usunac
-      callCommand $ "java -cp " ++ fbFilePath ++ " baz"
+      callCommand $ "java -cp " ++ outputDir ++ " " ++ baseName
 
   where
   ts = myLexer s
@@ -71,22 +73,11 @@ showTree v tree = do
   putStrV v $ "\n[Abstract Syntax]\n\n" ++ show tree
   putStrV v $ "\n[Linearized tree]\n\n" ++ printTree tree
 
-usage :: IO ()
-usage = do
-  putStrLn $ unlines
-    [ "usage: Call with one of the following argument combinations:"
-    , "  --help          Display this help message."
-    , "  (no arguments)  Parse stdin verbosely."
-    , "  (files)         Parse content of files verbosely."
-    , "  -s (files)      Silent mode. Parse content of files silently."
-    ]
-
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ["--help"] -> usage
-    []         -> getContents >>= run 2 pProgram
+    []         -> getContents >>= run 2 pProgram ""
     "-s":fs    -> mapM_ (runFile 0 pProgram) fs
     fs         -> mapM_ (runFile 2 pProgram) fs
 
