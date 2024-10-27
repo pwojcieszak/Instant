@@ -22,8 +22,6 @@ import Control.Monad      ( when )
 import AbsInstant   ( Program(..) )
 import LexInstant   ( Token, mkPosToken )
 import ParInstant   ( pProgram, myLexer )
-import PrintInstant ( Print, printTree )
-import SkelInstant  ()
 import GeneratorLLVM ( generateLLVM )
 
 type Err        = Either String
@@ -62,11 +60,6 @@ run v p f s =
   where
   ts = myLexer s
   showPosToken ((l,c),t) = concat [ show l, ":", show c, "\t", show t ]
-
-showTree :: (Show a, Print a) => Int -> a -> IO ()
-showTree v tree = do
-  putStrV v $ "\n[Abstract Syntax]\n\n" ++ show tree
-  putStrV v $ "\n[Linearized tree]\n\n" ++ printTree tree
 
 main :: IO ()
 main = do
