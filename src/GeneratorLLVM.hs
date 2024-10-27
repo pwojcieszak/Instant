@@ -45,6 +45,7 @@ generateStmt (code, reg, varMap) (SExp exp) =
       printCall = "  call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.str, i32 0, i32 0), i32 %r" ++ show (newReg - 1) ++ ")\n"
   in (printCall : expCode, newReg, varMap)
 
+
 generateExp :: [String] -> Int -> AbsInstant.Exp -> ([String], Int)
 generateExp code reg (ExpAdd e1 e2) = generateBinaryOp code reg e1 e2 "add"
 generateExp code reg (ExpSub e1 e2) = generateBinaryOp code reg e1 e2 "sub"
@@ -58,7 +59,6 @@ generateExp code reg (ExpVar (Ident ident)) =
   let loadCode = "  %r" ++ show reg ++ " = load i32, i32* %" ++ ident ++ "\n"
   in (loadCode : code, reg + 1)
 
--- Funkcja do generowania operacji binarnych
 generateBinaryOp :: [String] -> Int -> AbsInstant.Exp -> AbsInstant.Exp -> String -> ([String], Int)
 generateBinaryOp code reg (ExpLit l1) (ExpLit l2) op =
   let binOpCode = "  %r" ++ show reg ++ " = " ++ op ++ " i32 " ++ show (l1) ++ ", " ++ show (l2) ++ "\n"
