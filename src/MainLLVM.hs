@@ -16,7 +16,7 @@ import System.Exit        ( exitFailure )
 import System.IO          ( writeFile )
 import System.Process     ( callCommand )
 import System.Directory   ( createDirectoryIfMissing ) 
-import System.FilePath    ( takeBaseName )
+import System.FilePath    ( takeBaseName, takeDirectory )
 import Control.Monad      ( when )
 
 import AbsInstant   ( Program(..) )
@@ -46,15 +46,11 @@ run v p f s =
       putStrLn err
       exitFailure
     Right tree -> do
-      -- TODO usunac
-      showTree v tree
-
       let llvmCode = generateLLVM tree 
       let baseName = takeBaseName f
-      let outputDir = "foo/bar"
+      let outputDir = takeDirectory f
       createDirectoryIfMissing True outputDir
 
-      
       let llFilePath = outputDir ++ "/" ++ baseName ++ ".ll"
       let bcFilePath = outputDir ++ "/" ++ baseName ++ ".bc"
 

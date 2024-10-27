@@ -16,7 +16,7 @@ import System.Exit        ( exitFailure )
 import System.IO          ( writeFile )
 import System.Process     ( callCommand )
 import System.Directory   ( createDirectoryIfMissing ) 
-import System.FilePath    ( takeBaseName )
+import System.FilePath    ( takeBaseName, takeDirectory )
 import Control.Monad      ( when )
 
 import AbsInstant   ( Program(..) )
@@ -46,14 +46,10 @@ run v p f s =
       putStrLn err
       exitFailure
     Right tree -> do
-      -- TODO usunac
-      showTree v tree
-
       let baseName = takeBaseName f
       let jvmCode = generateJVM tree baseName
-      let outputDir = "foo/bar"
+      let outputDir = takeDirectory f
       createDirectoryIfMissing True outputDir
-
 
       let jFilePath = outputDir ++ "/" ++ baseName ++ ".j"
 
@@ -62,7 +58,7 @@ run v p f s =
       callCommand $ "java -jar lib/jasmin.jar -d " ++ outputDir ++ " " ++ jFilePath ++ " > /dev/null"
       
       -- TODO usunac
-      callCommand $ "java -cp " ++ outputDir ++ " " ++ baseName
+      callCommand $ "java -cp " ++ outputDir ++ ":lib " ++ baseName
 
   where
   ts = myLexer s

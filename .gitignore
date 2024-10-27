@@ -24,3 +24,5 @@ cabal.project.local~
 
 /foo/bar/
 /examples/
+insc_jvm
+insc_llvm

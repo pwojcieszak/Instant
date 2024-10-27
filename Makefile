@@ -32,5 +32,6 @@ insc_jvm : $(src_files) src/GeneratorJVM.hs src/MainJVM.hs
 	${GHC} -o $@ $^
 
 # Rules for cleaning generated files
-clean :
-	-rm -f src/*.hi src/*.o src/*.log src/parser/*.hi src/parser/*.o src/parser/*.log foo/bar/* insc_jvm insc_llvm
+clean:
+	-rm -f src/*.hi src/*.o src/*.log src/parser/*.hi src/parser/*.o src/parser/*.log insc_jvm insc_llvm
+	find . -type f \( -name "*.j" -o -name "*.class" -o -name "*.ll" -o -name "*.bc" \) -exec rm -f {} +
