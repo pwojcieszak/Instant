@@ -16,3 +16,5 @@ let newMaxStackDepth = max stackDepth maxStackDepth
 
 Limit locals w JVM liczę po rozmiarze tablicy zmiennych lokalnych + 1 ponieważ metodą Main przyjmuje tablicę String
 
+Limit stack liczę tak: jeżeli expression to już jeden punkt. wywołując generateStmt zwiększam o '1' bo wiem że będę potrzebowaął miejsca na wynik. Następnie rekruencyjnie przechodząc drzewo wiem, że w lewych dzieciach dojdę finalnie do liczby (albo zmiennej) która będzie operandem. Zajmuje ona miejsce przeznaczone dla wyniku. Stos może się pogłębić tylko przez prawe poddrzewo. Dlatego przy każdym zejściu w prawo zwiększam aktualną wartość stosu o 1.
+
