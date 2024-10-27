@@ -18,7 +18,7 @@ generateJVM (Prog stmts) baseName =
   in ".class public " ++ baseName ++ "\n" ++
      ".super java/lang/Object\n\n" ++
      ".method public static main([Ljava/lang/String;)V\n" ++
-     ".limit stack " ++ show(100) ++ "\n" ++            -- TODO wrócić po optymalizacji (maxStackDepth)
+     ".limit stack " ++ show(maxStackDepth) ++ "\n" ++
      ".limit locals " ++ show((length varMap) + 1) ++ "\n" ++
      concat (reverse code) ++
      "  return\n" ++
@@ -71,8 +71,23 @@ generateExp code reg varMap stackDepth maxStackDepth (ExpVar (Ident ident)) =
 
 generateBinaryOp :: [String] -> Int -> VarMap -> Int -> Int -> AbsInstant.Exp -> AbsInstant.Exp -> String -> ([String], Int, Int, Int)
 generateBinaryOp code reg varMap stackDepth maxStackDepth e1 e2 op =
-  let (code1, reg1, stackDepth1, maxStackDepth1) = generateExp code reg varMap (stackDepth + 1) maxStackDepth e1
-      (code2, reg2, stackDepth2, maxStackDepth2) = generateExp code1 reg1 varMap (stackDepth + 1) maxStackDepth e2
-      newMaxStackDepth = updateMaxStackDepth stackDepth1 stackDepth2 maxStackDepth
-      operationCode = "  " ++ op ++ "\n"
+  let (complexFirst, simpleSecond, reverseOrder) =
+          if estimateDepth e1 >= estimateDepth e2
+          then (e1, e2, False)  
+          else (e2, e1, op `elem` ["isub", "idiv"])
+
+      (code1, reg1, stackDepth1, maxStackDepth1) = generateExp code reg varMap stackDepth maxStackDepth complexFirst
+      (code2, reg2, stackDepth2, maxStackDepth2) = generateExp code1 reg1 varMap (stackDepth + 1) maxStackDepth simpleSecond
+      swapInstr = if reverseOrder then "  swap\n" else ""
+      operationCode = swapInstr ++ "  " ++ op ++ "\n"
+      newMaxStackDepth = max maxStackDepth1 maxStackDepth2
   in (operationCode : code2, reg2, stackDepth - 1, newMaxStackDepth)
+
+
+estimateDepth :: AbsInstant.Exp -> Int
+estimateDepth (ExpLit _) = 1
+estimateDepth (ExpVar _) = 1
+estimateDepth (ExpAdd e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpMul e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpSub e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpDiv e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
