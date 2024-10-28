@@ -73,10 +73,10 @@ Napis wyjściowy (plik .j lub .ll) buduję poprzez dodawanie napisów na począt
 ## Zapożyczenia
 Część kodu w MainJVM.hs i MainLLVM.hs jest z wygenerowanego przez BNFC pliku testowego parsera. Plik ten był dla mnie punktem startowym, który zmodyfikowałem do swoich potrzeb.
 
-Wykorzystałem pomoc ChatGPT do napisania Makefile. Czat podpowiedział mi również jak zwrócić wartość z Guard w bloku in ... (skorzystać z case):
+Wykorzystałem pomoc ChatGPT do napisania Makefile. Czat podpowiedział mi również jak wykorzystać Guard w case():
 
-  ```in case () of
-      _ | n >= -1 && n <= 5    -> ("  iconst_" ++ show n ++ "\n", reg, stackDepth, newMaxStackDepth)
-        | n >= -128 && n <= 127 -> ("  bipush " ++ show n ++ "\n", reg, stackDepth, newMaxStackDepth)
-        | n >= -32768 && n <= 32767 -> ("  sipush " ++ show n ++ "\n", reg, stackDepth, newMaxStackDepth)
-        | otherwise             -> ("  ldc " ++ show n ++ "\n", reg, stackDepth, newMaxStackDepth)```
+  ```litCode = case () of
+        _ | n >= -1 && n <= 5    -> "  iconst_" ++ show n ++ "\n"
+          | n >= -128 && n <= 127 -> "  bipush " ++ show n ++ "\n"
+          | n >= -32768 && n <= 32767 -> "  sipush " ++ show n ++ "\n"
+          | otherwise             -> "  ldc " ++ show n ++ "\n"```
