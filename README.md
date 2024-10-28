@@ -1,13 +1,11 @@
-% MRJP - Zadanie 1
-% Piotr Wojcieszak
-% 2024-10-31
+% MRJP - Zadanie 1  
+% Piotr Wojcieszak  
+% 2024-10-31  
 
 # Kompilator Instant
-==================
 Projekt kompilatora dla języka Instant do JVM i LLVM.
 
 ## Kompilacja i uruchamianie programu
-==================================
 Projekt kompilujemy przy pomocy Makefile używając komendy `make`. W korzeniu projektu pojawią się pliki wykonywalne insc_jvm i insc_llvm do kompilacji odpowiednio do JVM i LLVM.
 
 W celu uruchomienia programu należy podać na wejściu programu plik z wyrażeniami zgodnymi z gramatyką Instant. Przykład uruchomienia:
@@ -17,15 +15,15 @@ W celu uruchomienia programu należy podać na wejściu programu plik z wyrażen
 `./insc_llvm ./examples/test01.ins`
 
 Po uruchomieniu, w katalogu, w którym znajduje się plik wejściowy wygenerowane zostaną pliki:
-   .j,.class dla insc_jvm
-   .ll,.bc dla insc_llvm 
+- .j, .class dla insc_jvm
+- .ll, .bc dla insc_llvm 
 
 ## Używane narzędzia i biblioteki
-  BNFC - 2.9.5
-  GHC - 9.4.7
-  LLVM - 18.1.3
-  Java - openjdk 17.0.12 2024-07-16
-  Jasmin - 2.3
+ - BNFC - 2.9.5
+ - GHC - 9.4.7
+ - LLVM - 18.1.3
+ - Java - openjdk 17.0.12 2024-07-16
+ - Jasmin - 2.3
 
 ## Struktura katalogów
 ```
@@ -60,7 +58,6 @@ W /src znajdziemy również folder /parser z parserem wygenerowanym przez BNFC n
 Po zbudowaniu w korzeniu projektu pojawią się pliki wykonywalne insc_jvm i insc_llvm. Po uruchomieniu programu w folderze z plikiem wejściowym zostaną wygenerowane pliki .j i .class lub .ll i .bc.
 
 ## Optymalizacje
-=============
 ### Kolejność liczenia podwyrażeń
 JVM. Zawsze liczę podwyrażenie o większej głębokości jako pierwsze. Do oceny głębokości wykorzystuję funkcję `estimateDepth`.
 
@@ -74,8 +71,7 @@ Dla JVM `.limit stack` liczony jest dynamicznie. Dla każdego 'statement' liczę
 Napis wyjściowy (plik .j lub .ll) buduję poprzez dodawanie napisów na początku tablicy napisu wyjściowego (oprócz nagłówka i stopki typowej dla generowanego pliku). Na końcu tablicę odwracam i łącze jej elementy. Robię tak ponieważ dodawanie elementu na początek tablicy i ich jednorazowe odwrócenie jest znacznie tańsze niż dodawanie ich na końcu.
 
 ## Zapożyczenia
-============
-Część kodu w MainJVM i MainLLVM jest z wygenerowanego przez BNFC pliku testowego parsera. Plik ten był dla mnie punktem startowym, który zmodyfikowałem do swoich potrzeb.
+Część kodu w MainJVM.hs i MainLLVM.hs jest z wygenerowanego przez BNFC pliku testowego parsera. Plik ten był dla mnie punktem startowym, który zmodyfikowałem do swoich potrzeb.
 
 Wykorzystałem pomoc ChatGPT do napisania Makefile. Czat podpowiedział mi również jak zwrócić wartość z Guard w bloku in ... (skorzystać z case):
 
