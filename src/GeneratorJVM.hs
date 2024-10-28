@@ -13,9 +13,14 @@ estimateDepth (ExpMul e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
 estimateDepth (ExpSub e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
 estimateDepth (ExpDiv e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
 
+isSimpleExp :: Exp -> Bool
+isSimpleExp (ExpLit _) = True
+isSimpleExp (ExpVar _) = True
+isSimpleExp _ = False
+
 generateJVM :: AbsInstant.Program -> String -> String
 generateJVM (Prog stmts) baseName =
-  let (code, _, varMap, maxStackSize) = foldl generateStmt ([], 0, [], 0) stmts
+  let (code, _, varMap, maxStackSize) = foldl generateStmt ([], 1, [], 0) stmts
   in ".class public " ++ baseName ++ "\n" ++
      ".super java/lang/Object\n\n" ++
      ".method public static main([Ljava/lang/String;)V\n" ++
@@ -42,9 +47,15 @@ generateStmt (code, localVarIndex, varMap, maxStackSize) (SAss (Ident ident) exp
 
 generateStmt (code, reg, varMap, maxStackSize) (SExp exp) =
   let printHead = "  getstatic java/lang/System/out Ljava/io/PrintStream;\n"
-      (expCode, newReg, _, newMaxStackSize) = generateExp (printHead : code) reg varMap 2 maxStackSize exp
+      (expCode, newReg, _, newMaxStackSize) = 
+          if isSimpleExp exp 
+          then generateExp (printHead : code) reg varMap 2 maxStackSize exp
+          else generateExp code reg varMap 1 maxStackSize exp
       printTail = "  invokevirtual java/io/PrintStream/println(I)V\n"
-  in (printTail : expCode, newReg, varMap, newMaxStackSize)
+      finalCode = if isSimpleExp exp 
+                  then printTail : expCode
+                  else printTail : (printHead ++ "  swap\n") : expCode
+  in (finalCode, newReg, varMap, newMaxStackSize)
 
 
 generateExp :: [String] -> Int -> VarMap -> Int -> Int -> AbsInstant.Exp -> ([String], Int, Int, Int)

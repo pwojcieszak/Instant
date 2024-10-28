@@ -63,9 +63,13 @@ JVM. Zawsze liczę podwyrażenie o większej głębokości jako pierwsze. Do oc
 
 ### Eliminacja zbędnych swap
 JVM. Problem jest skutkiem zmiany kolejności liczenia podwyrażeń. Jeśli węzłem jest operacja o istotnej kolejności operatorów jak odejmowanie i dzielenie, wyniki na stosie zamieniam komendą `swap`. Dla dodawania i mnożenia nie ma to znaczenia, dlatego wtedy komendy tej nie wykonuję.  
+Drugim przypadkiem zbędnych swap jest obsługa wyboru instrukcji.
+
+### Wybór instrukcji
+JVM. Jeżeli wyrażenie, które będziemy wypisywali na wyjściu jest złożone to możemy odłożyć kładzenie na stosie standardowego wyjścia na sam koniec. Aby argumenty na stosie były w dobrej kolejności dokonujemy swap. Jeżeli są to proste wyrażenia to nic nie zyskamy z tej odwróconej kolejności, dlatego kładę na stos pole wyjścia przed wyrażeniem. 
 
 ### .limit stack
-Dla JVM `.limit stack` liczony jest dynamicznie. Dla każdego 'statement' liczę potrzebny dla niego rozmiar stosu i największy z nich ustawiam jako limit. Z powodu wykonanej optymalizacji kolejności liczenia podwyrażeń muszę zwracać uwagę jedynie na rozmiar prawego poddrzewa AST (idąc ciągle w lewo dotrę w końcu do zmiennej lub literału, a po prawej mogę napotkać dodatkowe operacje). Dla SExp początkową wartością stosu jest '2' (wartość zwracana i pole `out`) i rośnie przy zagnieżdżaniu się w prawe podwyrażenie. Dla SAss początkową wartością stosu jest '1' (wartość przypisania) i rośnie tak samo jak dla SExp.
+Dla JVM `.limit stack` liczony jest dynamicznie. Dla każdego 'statement' liczę potrzebny dla niego rozmiar stosu i największy z nich ustawiam jako limit. Z powodu wykonanej optymalizacji kolejności liczenia podwyrażeń muszę zwracać uwagę jedynie na rozmiar prawego poddrzewa AST (idąc ciągle w lewo dotrę w końcu do zmiennej lub literału, a po prawej mogę napotkać dodatkowe operacje). Dla SExp początkową wartością stosu jest '2' (wartość zwracana i pole `out`) i rośnie przy zagnieżdżaniu się w prawe podwyrażenie. Dzięki optymalizacji 'Wybór instruckji', jeżeli mamy do czynienia ze złożonym wyrażeniem dla SExp to możemy pole ;out' położyć na końcu i jako początkową wartość stosu ustawić '1'. Dla SAss początkową wartością stosu jest '1' (wartość przypisania) i rośnie tak samo jak dla SExp.
 
 ### Budowanie napisu wyjściowego
 Napis wyjściowy (plik .j lub .ll) buduję poprzez dodawanie napisów na początku tablicy napisu wyjściowego (oprócz nagłówka i stopki typowej dla generowanego pliku). Na końcu tablicę odwracam i łącze jej elementy. Robię tak ponieważ dodawanie elementu na początek tablicy i ich jednorazowe odwrócenie jest znacznie tańsze niż dodawanie ich na końcu.
