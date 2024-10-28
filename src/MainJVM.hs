@@ -52,20 +52,25 @@ run v p f s =
       let jFilePath = outputDir ++ "/" ++ baseName ++ ".j"
 
       writeFile jFilePath jvmCode
-
       callCommand $ "java -jar lib/jasmin.jar -d " ++ outputDir ++ " " ++ jFilePath ++ " > /dev/null"
-      -- TODO usunac
-      callCommand $ "java -cp " ++ outputDir ++ ":lib " ++ baseName
 
   where
   ts = myLexer s
   showPosToken ((l,c),t) = concat [ show l, ":", show c, "\t", show t ]
 
+usage :: IO ()
+usage = do
+  putStrLn $ unlines
+    [ "usage: Call with one of the following argument combinations:"
+    , "  (files)         Parse and compile content of files verbosely."
+    , "  -s (files)      Silent mode. Parse and compile content of files silently."
+    ]
+
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    []         -> getContents >>= run 2 pProgram ""
+    []         -> usage
     "-s":fs    -> mapM_ (runFile 0 pProgram) fs
     fs         -> mapM_ (runFile 2 pProgram) fs
 

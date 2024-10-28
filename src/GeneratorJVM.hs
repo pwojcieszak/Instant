@@ -5,12 +5,13 @@ import AbsInstant (Program(..), Stmt(..), Exp(..), Ident(..))
 
 type VarMap = [(String, Int)]
 
-updateMaxStackSize :: Int -> Int -> Int -> Int
-updateMaxStackSize d1 d2 maxSize =
-  let new = max d1 d2
-  in if new > maxSize
-     then new
-     else maxSize
+estimateDepth :: AbsInstant.Exp -> Int
+estimateDepth (ExpLit _) = 1
+estimateDepth (ExpVar _) = 1
+estimateDepth (ExpAdd e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpMul e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpSub e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
+estimateDepth (ExpDiv e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
 
 generateJVM :: AbsInstant.Program -> String -> String
 generateJVM (Prog stmts) baseName =
@@ -81,12 +82,3 @@ generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 op =
       operationCode = swapInstr ++ "  " ++ op ++ "\n"
       newMaxStackSize = max maxStackSize1 maxStackSize2
   in (operationCode : code2, reg2, stackSize - 1, newMaxStackSize)
-
-
-estimateDepth :: AbsInstant.Exp -> Int
-estimateDepth (ExpLit _) = 1
-estimateDepth (ExpVar _) = 1
-estimateDepth (ExpAdd e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpMul e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpSub e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpDiv e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)

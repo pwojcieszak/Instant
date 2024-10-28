@@ -1,5 +1,4 @@
 # Makefile for building the program
-
 GHC        = ghc
 
 # List of source files in the src directory
@@ -11,7 +10,7 @@ src_files = src/parser/AbsInstant.hs src/parser/LexInstant.hs src/parser/ParInst
 # Default goal
 all : insc_llvm  insc_jvm
 
-# Build the insc_llvm executable
+# Build the insc_llvm and insc_jvm executable
 insc_llvm : $(src_files) src/GeneratorLLVM.hs src/MainLLVM.hs
 	${GHC} -o $@ $^
 
