@@ -25,7 +25,7 @@ generateJVM (Prog stmts) baseName =
 
 generateStmt :: ([String], Int, VarMap, Int) -> AbsInstant.Stmt -> ([String], Int, VarMap, Int)
 generateStmt (code, localVarIndex, varMap, maxStackSize) (SAss (Ident ident) exp) =
-  let (expCode, newReg, stackSize) = generateExp code localVarIndex varMap 1 exp
+  let (expCode, newIndex, stackSize) = generateExp code localVarIndex varMap 0 exp
       varIndex = case lookup ident varMap of
                    Just index -> index
                    Nothing    -> localVarIndex
@@ -33,8 +33,8 @@ generateStmt (code, localVarIndex, varMap, maxStackSize) (SAss (Ident ident) exp
                   then "  istore_" ++ show varIndex ++ "\n"
                   else "  istore " ++ show varIndex ++ "\n"
       (newVarMap, newLocalVarIndex) = if lookup ident varMap == Nothing
-                  then ((ident, varIndex) : varMap, newReg + 1)
-                  else (varMap, newReg)
+                  then ((ident, varIndex) : varMap, newIndex + 1)
+                  else (varMap, newIndex)
   in ((storeCode : expCode) ++ code, newLocalVarIndex, newVarMap, max stackSize maxStackSize)
 
 generateStmt (code, reg, varMap, maxStackSize) (SExp exp) =
@@ -46,7 +46,7 @@ generateStmt (code, reg, varMap, maxStackSize) (SExp exp) =
       printTail = "  invokevirtual java/io/PrintStream/println(I)V\n"
       finalCode = if isSimpleExp exp 
                   then (printTail : expCode) ++ (printHead : code)
-                  else printTail : (printHead ++ "  swap\n") : expCode ++ code
+                  else (printHead ++ "  swap\n" ++ printTail) : expCode ++ code
   in (finalCode, newReg, varMap, max stackSize maxStackSize)
 
 
@@ -81,13 +81,13 @@ generateBinaryOp :: [String] -> Int -> VarMap -> Int -> AbsInstant.Exp -> AbsIns
 generateBinaryOp code reg varMap stackSize e1 e2 op =
   let (code1, reg1, stackSize1) = generateExp code reg varMap stackSize e1
       (code2, reg2, stackSize2) = generateExp code reg1 varMap stackSize e2
-      (optimizedCode, newMaxStackSize, reverseOrder) =
+      (optimizedCode, newStackSize, reverseOrder) =
           if stackSize1 > stackSize2
-          then (code2 ++ code1, max stackSize1 (stackSize2+1), False)  
+          then (code2 ++ code1, max stackSize1 (stackSize2 + 1), False)  
           else if not(isSimpleExp e1 && isSimpleExp e2)
-            then (code1 ++ code2, max stackSize1 (stackSize1+1), op `elem` ["isub", "idiv"])
-            else (code2 ++ code1, max stackSize1 (stackSize2+1), False)
+            then (code1 ++ code2, max stackSize2 (stackSize1 + 1), op `elem` ["isub", "idiv"])
+            else (code2 ++ code1, max stackSize1 (stackSize2 + 1), False)
           
       swapInstr = if reverseOrder then "  swap\n" else ""
       operationCode = swapInstr ++ "  " ++ op ++ "\n"
-  in (operationCode : (optimizedCode), reg2, newMaxStackSize)
+  in (operationCode : (optimizedCode), reg2, newStackSize)

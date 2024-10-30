@@ -59,28 +59,19 @@ Po zbudowaniu w korzeniu projektu pojawią się pliki wykonywalne insc_jvm i ins
 
 ## Optymalizacje
 ### Kolejność liczenia podwyrażeń
-JVM. Zawsze liczę podwyrażenie o większej głębokości jako pierwsze. Do oceny głębokości wykorzystuję funkcję `estimateDepth`.
+JVM. Zawsze liczę podwyrażenie o większym zapotrzebowaniu stosowym jako pierwsze.
 
 ### Eliminacja zbędnych swap
-JVM. Problem jest skutkiem zmiany kolejności liczenia podwyrażeń. Jeśli węzłem jest operacja o istotnej kolejności operatorów jak odejmowanie i dzielenie, wyniki na stosie zamieniam komendą `swap`. Dla dodawania i mnożenia nie ma to znaczenia, dlatego wtedy komendy tej nie wykonuję.  
-Drugim przypadkiem zbędnych swap jest obsługa wyboru instrukcji.
+JVM. Problem jest skutkiem zmiany kolejności liczenia podwyrażeń. Jeśli węzłem jest operacja o istotnej kolejności operatorów jak odejmowanie i dzielenie, wyniki na stosie zamieniam komendą `swap`. Dla dodawania i mnożenia nie ma to znaczenia, dlatego wtedy komendy tej nie wykonuję.
 
 ### Wybór instrukcji
-JVM. Jeżeli wyrażenie, które będziemy wypisywali na wyjściu jest złożone to możemy odłożyć kładzenie na stosie standardowego wyjścia na sam koniec. Aby argumenty na stosie były w dobrej kolejności dokonujemy swap. Jeżeli są to proste wyrażenia to nic nie zyskamy z tej odwróconej kolejności, dlatego kładę na stos pole wyjścia przed wyrażeniem. 
+JVM. W programie korzystam ze skróconych instrukcji do wczytywania stałych oraz zmiennych i ich zapisu.
 
 ### .limit stack
-Dla JVM `.limit stack` liczony jest dynamicznie. Dla każdego 'statement' liczę potrzebny dla niego rozmiar stosu i największy z nich ustawiam jako limit. Z powodu wykonanej optymalizacji kolejności liczenia podwyrażeń muszę zwracać uwagę jedynie na rozmiar prawego poddrzewa AST (idąc ciągle w lewo dotrę w końcu do zmiennej lub literału, a po prawej mogę napotkać dodatkowe operacje). Dla SExp początkową wartością stosu jest '2' (wartość zwracana i pole `out`) i rośnie przy zagnieżdżaniu się w prawe podwyrażenie. Dzięki optymalizacji 'Wybór instruckji', jeżeli mamy do czynienia ze złożonym wyrażeniem dla SExp to możemy pole ;out' położyć na końcu i jako początkową wartość stosu ustawić '1'. Dla SAss początkową wartością stosu jest '1' (wartość przypisania) i rośnie tak samo jak dla SExp.
+Dla JVM `.limit stack` liczony jest od dołu. Przechodzę rekrurencyjnie przez drzewo i zatrzymawszy się w liściu zwiększam o 1. W węzłach porównuję rozmiary stosu w obu poddrzewach, wybieram to o większym stosie do obliczenia jako pierwsze i rozmiar stosu węzła ustawiam jako maksimum z drzewa o większym stosie a mniejszym + 1 (bo w momencie przejścia do niego będzie na stosie wynik lewego). Na końcu przejścia przez drzewo porównuję jego wartość z wartością maksymalną stosu dla całego programu. W przypadku przetwarzania prostego (złożonego z literałów albo zmiennych) SExp przed obliczeniami wstawiam na stos pole 'out' dlatego licznik stosu ma na starcie '1'.
 
 ### Budowanie napisu wyjściowego
 Napis wyjściowy (plik .j lub .ll) buduję poprzez dodawanie napisów na początku tablicy napisu wyjściowego (oprócz nagłówka i stopki typowej dla generowanego pliku). Na końcu tablicę odwracam i łącze jej elementy. Robię tak ponieważ dodawanie elementu na początek tablicy i ich jednorazowe odwrócenie jest znacznie tańsze niż dodawanie ich na końcu.
 
 ## Zapożyczenia
-Część kodu w MainJVM.hs i MainLLVM.hs jest z wygenerowanego przez BNFC pliku testowego parsera. Plik ten był dla mnie punktem startowym, który zmodyfikowałem do swoich potrzeb.
-
-Wykorzystałem pomoc ChatGPT do napisania Makefile. Czat podpowiedział mi również jak wykorzystać Guard w case():
-
-  ```litCode = case () of
-        _ | n >= -1 && n <= 5    -> "  iconst_" ++ show n ++ "\n"
-          | n >= -128 && n <= 127 -> "  bipush " ++ show n ++ "\n"
-          | n >= -32768 && n <= 32767 -> "  sipush " ++ show n ++ "\n"
-          | otherwise             -> "  ldc " ++ show n ++ "\n"```
+Część kodu w MainJVM.hs i MainLLVM.hs jest z wygenerowanego przez BNFC pliku testowego parsera. Plik ten był dla mnie punktem startowym, który zmodyfikowałem do swoich potrzeb. Podobnie sprawa ma się z Makefile.
