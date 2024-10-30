@@ -5,14 +5,6 @@ import AbsInstant (Program(..), Stmt(..), Exp(..), Ident(..))
 
 type VarMap = [(String, Int)]
 
-estimateDepth :: AbsInstant.Exp -> Int
-estimateDepth (ExpLit _) = 1
-estimateDepth (ExpVar _) = 1
-estimateDepth (ExpAdd e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpMul e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpSub e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-estimateDepth (ExpDiv e1 e2) = 1 + max (estimateDepth e1) (estimateDepth e2)
-
 isSimpleExp :: Exp -> Bool
 isSimpleExp (ExpLit _) = True
 isSimpleExp (ExpVar _) = True
@@ -33,7 +25,7 @@ generateJVM (Prog stmts) baseName =
 
 generateStmt :: ([String], Int, VarMap, Int) -> AbsInstant.Stmt -> ([String], Int, VarMap, Int)
 generateStmt (code, localVarIndex, varMap, maxStackSize) (SAss (Ident ident) exp) =
-  let (expCode, newReg, _, newMaxStackSize) = generateExp code localVarIndex varMap 1 maxStackSize exp
+  let (expCode, newReg, stackSize) = generateExp code localVarIndex varMap 1 exp
       varIndex = case lookup ident varMap of
                    Just index -> index
                    Nothing    -> localVarIndex
@@ -43,53 +35,59 @@ generateStmt (code, localVarIndex, varMap, maxStackSize) (SAss (Ident ident) exp
       (newVarMap, newLocalVarIndex) = if lookup ident varMap == Nothing
                   then ((ident, varIndex) : varMap, newReg + 1)
                   else (varMap, newReg)
-  in (storeCode : expCode, newLocalVarIndex, newVarMap, newMaxStackSize)
+  in ((storeCode : expCode) ++ code, newLocalVarIndex, newVarMap, max stackSize maxStackSize)
 
 generateStmt (code, reg, varMap, maxStackSize) (SExp exp) =
   let printHead = "  getstatic java/lang/System/out Ljava/io/PrintStream;\n"
-      (expCode, newReg, _, newMaxStackSize) = 
+      (expCode, newReg, stackSize) = 
           if isSimpleExp exp 
-          then generateExp (printHead : code) reg varMap 2 maxStackSize exp
-          else generateExp code reg varMap 1 maxStackSize exp
+          then generateExp code reg varMap 1  exp
+          else generateExp code reg varMap 0 exp
       printTail = "  invokevirtual java/io/PrintStream/println(I)V\n"
       finalCode = if isSimpleExp exp 
-                  then printTail : expCode
-                  else printTail : (printHead ++ "  swap\n") : expCode
-  in (finalCode, newReg, varMap, newMaxStackSize)
+                  then (printTail : expCode) ++ (printHead : code)
+                  else printTail : (printHead ++ "  swap\n") : expCode ++ code
+  in (finalCode, newReg, varMap, max stackSize maxStackSize)
 
 
-generateExp :: [String] -> Int -> VarMap -> Int -> Int -> AbsInstant.Exp -> ([String], Int, Int, Int)
-generateExp code reg varMap stackSize maxStackSize (ExpAdd e1 e2) = generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 "iadd"
-generateExp code reg varMap stackSize maxStackSize (ExpSub e1 e2) = generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 "isub"
-generateExp code reg varMap stackSize maxStackSize (ExpMul e1 e2) = generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 "imul"
-generateExp code reg varMap stackSize maxStackSize (ExpDiv e1 e2) = generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 "idiv"
-generateExp code reg _ stackSize maxStackSize (ExpLit n) =
-  let newMaxStackSize = max stackSize maxStackSize
-      litCode = case () of
-        _ | n >= -1 && n <= 5    -> "  iconst_" ++ show n ++ "\n"
-          | n >= -128 && n <= 127 -> "  bipush " ++ show n ++ "\n"
-          | n >= -32768 && n <= 32767 -> "  sipush " ++ show n ++ "\n"
-          | otherwise             -> "  ldc " ++ show n ++ "\n"
-  in (litCode : code, reg, stackSize, newMaxStackSize)
+generateExp :: [String] -> Int -> VarMap -> Int -> AbsInstant.Exp -> ([String], Int, Int)
+generateExp code reg varMap stackSize (ExpAdd e1 e2) = generateBinaryOp code reg varMap stackSize e1 e2 "iadd"
+generateExp code reg varMap stackSize (ExpSub e1 e2) = generateBinaryOp code reg varMap stackSize e1 e2 "isub"
+generateExp code reg varMap stackSize (ExpMul e1 e2) = generateBinaryOp code reg varMap stackSize e1 e2 "imul"
+generateExp code reg varMap stackSize (ExpDiv e1 e2) = generateBinaryOp code reg varMap stackSize e1 e2 "idiv"
+generateExp _ reg _ stackSize (ExpLit n) =
+  let litCode =
+        if n >= -1 && n <= 5 then
+          "  iconst_" ++ show n ++ "\n"
+        else if n >= -128 && n <= 127 then
+          "  bipush " ++ show n ++ "\n"
+        else if n >= -32768 && n <= 32767 then
+          "  sipush " ++ show n ++ "\n"
+        else
+          "  ldc " ++ show n ++ "\n"
+  in ([litCode], reg, stackSize + 1)
 
-generateExp code reg varMap stackSize maxStackSize (ExpVar (Ident ident)) =
-  let newMaxStackSize = max stackSize maxStackSize
-      varCode = case lookup ident varMap of
-        Just index
-          | index >= 0 && index <= 3 -> "  iload_" ++ show index ++ "\n"
-          | otherwise -> "  iload " ++ show index ++ "\n"
+generateExp _ reg varMap stackSize (ExpVar (Ident ident)) =
+  let varCode = case lookup ident varMap of
+        Just index ->
+          if index >= 0 && index <= 3 then
+            "  iload_" ++ show index ++ "\n"
+          else
+            "  iload " ++ show index ++ "\n"
         Nothing -> error $ "Variable " ++ ident ++ " not found."
-  in (varCode : code, reg, stackSize, newMaxStackSize)
+  in ([varCode], reg, stackSize + 1)
 
-generateBinaryOp :: [String] -> Int -> VarMap -> Int -> Int -> AbsInstant.Exp -> AbsInstant.Exp -> String -> ([String], Int, Int, Int)
-generateBinaryOp code reg varMap stackSize maxStackSize e1 e2 op =
-  let (complexFirst, simpleSecond, reverseOrder) =
-          if estimateDepth e1 >= estimateDepth e2
-          then (e1, e2, False)  
-          else (e2, e1, op `elem` ["isub", "idiv"])
-      (code1, reg1, stackSize1, maxStackSize1) = generateExp code reg varMap stackSize maxStackSize complexFirst
-      (code2, reg2, stackSize2, maxStackSize2) = generateExp code1 reg1 varMap (stackSize + 1) maxStackSize simpleSecond
+generateBinaryOp :: [String] -> Int -> VarMap -> Int -> AbsInstant.Exp -> AbsInstant.Exp -> String -> ([String], Int, Int)
+generateBinaryOp code reg varMap stackSize e1 e2 op =
+  let (code1, reg1, stackSize1) = generateExp code reg varMap stackSize e1
+      (code2, reg2, stackSize2) = generateExp code reg1 varMap stackSize e2
+      (optimizedCode, newMaxStackSize, reverseOrder) =
+          if stackSize1 > stackSize2
+          then (code2 ++ code1, max stackSize1 (stackSize2+1), False)  
+          else if not(isSimpleExp e1 && isSimpleExp e2)
+            then (code1 ++ code2, max stackSize1 (stackSize1+1), op `elem` ["isub", "idiv"])
+            else (code2 ++ code1, max stackSize1 (stackSize2+1), False)
+          
       swapInstr = if reverseOrder then "  swap\n" else ""
       operationCode = swapInstr ++ "  " ++ op ++ "\n"
-      newMaxStackSize = max maxStackSize1 maxStackSize2
-  in (operationCode : code2, reg2, stackSize - 1, newMaxStackSize)
+  in (operationCode : (optimizedCode), reg2, newMaxStackSize)
