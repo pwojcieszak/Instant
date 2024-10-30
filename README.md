@@ -65,7 +65,7 @@ JVM. Zawsze liczę podwyrażenie o większym zapotrzebowaniu stosowym jako pier
 JVM. Problem jest skutkiem zmiany kolejności liczenia podwyrażeń. Jeśli węzłem jest operacja o istotnej kolejności operatorów jak odejmowanie i dzielenie, wyniki na stosie zamieniam komendą `swap`. Dla dodawania i mnożenia nie ma to znaczenia, dlatego wtedy komendy tej nie wykonuję.
 
 ### Wybór instrukcji
-JVM. W programie korzystam ze skróconych instrukcji do wczytywania stałych oraz zmiennych i ich zapisu.
+JVM. W programie korzystam ze skróconych instrukcji do wczytywania stałych oraz zmiennych i ich zapisu. Tak samo korzystam z odpowiednich funkcji wstawiających wartość na stos zależnie od rozmiaru.
 
 ### .limit stack
 Dla JVM `.limit stack` liczony jest od dołu. Przechodzę rekrurencyjnie przez drzewo i zatrzymawszy się w liściu zwiększam o 1. W węzłach porównuję rozmiary stosu w obu poddrzewach, wybieram to o większym stosie do obliczenia jako pierwsze i rozmiar stosu węzła ustawiam jako maksimum z drzewa o większym stosie a mniejszym + 1 (bo w momencie przejścia do niego będzie na stosie wynik lewego). Na końcu przejścia przez drzewo porównuję jego wartość z wartością maksymalną stosu dla całego programu. W przypadku przetwarzania prostego (złożonego z literałów albo zmiennych) SExp przed obliczeniami wstawiam na stos pole 'out' dlatego licznik stosu ma na starcie '1'.
